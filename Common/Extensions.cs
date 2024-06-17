@@ -78,4 +78,36 @@ public static class Extensions
 		var taskSyncDateTime = new DateTimeOffset(dateTimeOffset.DateTime.AddHours(baseUtcOffset.Hours), baseUtcOffset);
 		return taskSyncDateTime;
 	}
+
+	/// <summary>
+	/// Optimistically attempts to parse string datetime value.
+	///
+	/// Date and time is not easy. Due to the complexity, risk and global variety of date and time formats, I think its best
+	/// to resolve this responsibility as the value is entered as input. During transit via dto, the value can then be the appropriate type: Date, DateTime, Time, DateTimeOffset, ...
+	/// As the value is consumed by the client/s, then it can be formatted. 
+	/// </summary>
+	/// <param name="dateTimeString"></param>
+	/// <param name="knownFormats">list of known formats to attempt to parse</param>
+	/// <param name="cultureId"></param>
+	/// <returns></returns>
+	public static DateTimeOffset? ToDateTimeOffsetFromString(this string dateTimeString, string[] knownFormats, string cultureId = "en-US")
+	{
+		var cultureInfo = new CultureInfo(cultureId, false);
+
+		//  Attempt to parse with known culture and format/s.
+		if (!DateTimeOffset.TryParseExact(
+			    dateTimeString,
+			    knownFormats,
+			    cultureInfo,
+			    DateTimeStyles.None,
+			    out var dateTimeWithOffsetValue))
+		{
+			//  Fallback, attempt to parse if format is standard.
+			return !DateTimeOffset.TryParse(dateTimeString, out var dateTimeOffset)
+				? default 
+				: dateTimeOffset;
+		}
+
+		return dateTimeWithOffsetValue;
+	}
 }
